@@ -1,41 +1,36 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Runs a full grid: 3 policies x 3 workloads, with configurable repeats.
-# Example:
-#   ./run_all.sh --session 2025-12-31_A --repeat 50 --out data/results_v2.csv
+SESSION_ID="${1:-$(date +%F)_A}"
+REPEAT="${2:-30}"
+CORE="${3:-3}"
 
-SESSION_ID="$(date +%F)_A"
-REPEAT=30
-OUT="data/results_v2.csv"
-CORE="3"
+OUT="data/results_${SESSION_ID}.csv"
 
-while [[ $# -gt 0 ]]; do
-  case $1 in
-    --session) SESSION_ID="$2"; shift 2;;
-    --repeat) REPEAT="$2"; shift 2;;
-    --out) OUT="$2"; shift 2;;
-    --core) CORE="$2"; shift 2;;
-    *) echo "Unknown arg: $1" >&2; exit 1;;
-  esac
-done
+POLICIES=(cfs rr fifo)
+WORKLOADS=(burn pulse yield)
 
-# Collect environment info
+mkdir -p data
+
+echo "Session: $SESSION_ID"
+echo "Repeats per combo: $REPEAT"
+echo "Output: $OUT"
+
+# Capture environment once
 scripts/collect_env.sh "$SESSION_ID" "data"
 
-policies=("cfs" "rr" "fifo")
-workloads=("burn" "yield" "pulse")
-
-for p in "${policies[@]}"; do
-  for w in "${workloads[@]}"; do
+# Run experiments
+for workload in "${WORKLOADS[@]}"; do
+  for policy in "${POLICIES[@]}"; do
+    echo "Running: policy=$policy workload=$workload"
     ./run_experiment.sh \
-      --policy "$p" \
-      --workload "$w" \
+      --session "$SESSION_ID" \
+      --policy "$policy" \
+      --workload "$workload" \
       --core "$CORE" \
       --repeat "$REPEAT" \
-      --session "$SESSION_ID" \
       --out "$OUT"
   done
 done
 
-echo "Done. Wrote: $OUT"
+echo "Done. Data in $OUT"

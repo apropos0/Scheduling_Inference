@@ -1,7 +1,3 @@
-# Data outputs
-data/*.csv
-data/*.txt
-
 # Temporary files
 perf_tmp.txt
 __pycache__/
